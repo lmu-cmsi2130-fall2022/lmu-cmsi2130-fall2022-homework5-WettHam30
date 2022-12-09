@@ -27,7 +27,24 @@ public class CSPSolver {
      */
     public static List<LocalDate> solve (int nMeetings, LocalDate rangeStart, LocalDate rangeEnd, Set<DateConstraint> constraints) {
         // [!] TODO!
-        throw new UnsupportedOperationException();
+    	List<LocalDate> ans = new ArrayList<LocalDate>();
+    	List<MeetingDomain> domains = new ArrayList<MeetingDomain>();
+    	
+    	for(int i = 0; i < nMeetings; i++) {
+    		domains.add(new MeetingDomain(rangeStart, rangeEnd));
+    	}
+    	
+    	nodeConsistency(domains, constraints);
+    	    	
+    	solve(nMeetings, domains, constraints, ans);
+    	
+    	System.out.println(ans);
+    	
+    	if(ans.size() == 0) {
+    		return null;
+    	}
+    	
+    	return ans;
     }
     
     
@@ -44,7 +61,31 @@ public class CSPSolver {
      */
     public static void nodeConsistency (List<MeetingDomain> varDomains, Set<DateConstraint> constraints) {
         // [!] TODO!
-        throw new UnsupportedOperationException();
+    	
+    	for (int i = 0; i < varDomains.size(); i++) {
+    	    MeetingDomain newDom = varDomains.get(i);
+
+    	    Iterator<LocalDate> iterator = newDom.domainValues.iterator();
+    	    while (iterator.hasNext()) {
+    	        LocalDate date = iterator.next();
+
+    	        for (DateConstraint constraint : constraints) {
+
+    	            if (constraint.arity() == 1) {
+    	                UnaryDateConstraint c = (UnaryDateConstraint) constraint;
+    	                
+    	                if(c.L_VAL == i) {
+        	                if (!constraint.isSatisfiedBy(date, c.R_VAL)) {
+        	                    iterator.remove();
+        	                }
+    	                }
+    	                
+    	            }
+    	        }
+    	    }
+    	}
+    	
+    	System.out.println(varDomains);
     }
     
     /**
@@ -57,7 +98,30 @@ public class CSPSolver {
      */
     public static void arcConsistency (List<MeetingDomain> varDomains, Set<DateConstraint> constraints) {
         // [!] TODO!
-        throw new UnsupportedOperationException();
+    	Set<Arc> arcSet = new HashSet<Arc>();
+    	for(int i = 0; i < varDomains.size(); i++) {
+    		for(DateConstraint d : constraints) {
+				BinaryDateConstraint constraint = (BinaryDateConstraint) d;
+				
+        		arcSet.add(new Arc(i, d.L_VAL, d));
+        		arcSet.add(new Arc(i, constraint.L_VAL, constraint.getReverse()));
+    		}
+    	}
+    	
+    	int i = 0;
+    	
+    	while(arcSet.size() > 0) {
+    		
+    		if(removeIncVal(arcSet.get(i), arcSet.get(d.L_VAL), constraints)) {
+    			
+    			for(DateConstraint d : constraints) {
+    				
+    				if(d.arity() == 1) {
+    					arcSet.add(new Arc(i, d.L_VAL, d));
+    				}
+    			}
+    		}
+    	}
     }
     
     /**
@@ -107,4 +171,98 @@ public class CSPSolver {
         
     }
     
+    private static List<LocalDate> solve (int nMeetings, List<MeetingDomain> domains,
+    		Set<DateConstraint> constraints, List<LocalDate> ans) {   	
+    	
+    	if(nMeetings == ans.size()) {
+    		return ans;
+    	}
+    	    	
+    	MeetingDomain mDomain = domains.get(ans.size());
+    	
+		//for each date in current domain
+		for(LocalDate m : mDomain.domainValues) {
+    		ans.add(m);
+
+			if(consistent(constraints, ans, m)) {
+
+				List<LocalDate> result = solve(nMeetings, domains, constraints, ans);
+				
+				if(result == null || result.size() != 0) {
+					return result;
+				}
+				    				
+			}
+			ans.remove(ans.lastIndexOf(m));			
+
+		}
+		
+    	return null;   	
+    }
+    
+    private static boolean consistent(Set<DateConstraint> constraints, List<LocalDate> ans, LocalDate date) {
+		//if constraint violated, not consistent
+		for(DateConstraint d : constraints) {
+			
+			if(d.L_VAL > ans.size() ) {
+				continue;
+			}
+			
+			for(int i = 0; i < ans.size(); i++) {
+				if(d.arity() == 1) {
+
+					UnaryDateConstraint constraint = (UnaryDateConstraint) d;
+					//currently comparing to itself, get rVal
+	    			if(!d.isSatisfiedBy(date, constraint.R_VAL)) {
+
+	    				return false;
+	    			}
+				}
+
+				if(d.arity() == 2) {
+					BinaryDateConstraint constraint = (BinaryDateConstraint) d;
+					
+					if(constraint.L_VAL >= ans.size()|| constraint.R_VAL >= ans.size()) {
+						continue;
+					}
+										
+					if(!d.isSatisfiedBy(ans.get(constraint.L_VAL), ans.get(constraint.R_VAL))) {
+						return false;
+					}
+				}
+			}		
+	
+		}
+		
+		return true;
+    }
+    
+    private static boolean removeIncVal(MeetingDomain tail, MeetingDomain head, Set<DateConstraint> constraints) {
+    	boolean removed = false;
+    	boolean consistent = false;
+    	
+    	for(LocalDate date : tail.domainValues) {
+    		
+    		for(LocalDate date2 : head.domainValues) {
+    			
+    			for(DateConstraint d : constraints) {
+    				
+    				if(d.isSatisfiedBy(date2, date)) {
+    					consistent = true;
+    					break;
+    				}
+    			}
+    		}
+    		
+        	if(!consistent) {
+        		//remove tail date from domain
+        		
+        		
+        		removed = true;
+        	}
+
+    	}
+    	
+    	return removed;
+    }
 }
