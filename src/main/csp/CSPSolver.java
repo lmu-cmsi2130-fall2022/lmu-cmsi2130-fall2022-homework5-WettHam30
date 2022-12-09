@@ -35,6 +35,7 @@ public class CSPSolver {
     	}
     	
     	nodeConsistency(domains, constraints);
+//    	arcConsistency(domains, constraints);
     	    	
     	solve(nMeetings, domains, constraints, ans);
     	
@@ -100,7 +101,7 @@ public class CSPSolver {
         // [!] TODO!
     	Set<Arc> arcSet = new HashSet<Arc>();
     	for(int i = 0; i < varDomains.size(); i++) {
-    		for(DateConstraint d : constraints) {
+    		for(DateConstraint d : constraints) { 
 				BinaryDateConstraint constraint = (BinaryDateConstraint) d;
 				
         		arcSet.add(new Arc(i, d.L_VAL, d));
@@ -111,8 +112,12 @@ public class CSPSolver {
     	int i = 0;
     	
     	while(arcSet.size() > 0) {
-    		
-    		if(removeIncVal(arcSet.get(i), arcSet.get(d.L_VAL), constraints)) {
+    		MeetingDomain a = varDomains.get(arcSet.stream().findFirst().get().TAIL);
+    		arcSet.remove(arcSet.stream().findFirst().get());
+    		MeetingDomain b = varDomains.get(arcSet.stream().findFirst().get().TAIL);
+    		arcSet.remove(arcSet.stream().findFirst().get());
+
+    		if(removeIncVal(a, b, constraints)) {
     			
     			for(DateConstraint d : constraints) {
     				
@@ -121,7 +126,9 @@ public class CSPSolver {
     				}
     			}
     		}
+    		i++;
     	}
+    	System.out.println(varDomains);
     }
     
     /**
@@ -239,10 +246,10 @@ public class CSPSolver {
     
     private static boolean removeIncVal(MeetingDomain tail, MeetingDomain head, Set<DateConstraint> constraints) {
     	boolean removed = false;
-    	boolean consistent = false;
     	
     	for(LocalDate date : tail.domainValues) {
-    		
+        	boolean consistent = false;
+
     		for(LocalDate date2 : head.domainValues) {
     			
     			for(DateConstraint d : constraints) {
@@ -257,6 +264,7 @@ public class CSPSolver {
         	if(!consistent) {
         		//remove tail date from domain
         		
+        		tail.domainValues.remove(date);
         		
         		removed = true;
         	}
