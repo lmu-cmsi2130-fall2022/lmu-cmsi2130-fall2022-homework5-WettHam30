@@ -86,7 +86,6 @@ public class CSPSolver {
     	    }
     	}
     	
-    	System.out.println(varDomains);
     }
     
     /**
@@ -102,12 +101,19 @@ public class CSPSolver {
     	Set<Arc> arcSet = new HashSet<Arc>();
     	for(int i = 0; i < varDomains.size(); i++) {
     		for(DateConstraint d : constraints) { 
-				BinaryDateConstraint constraint = (BinaryDateConstraint) d;
-				
-        		arcSet.add(new Arc(i, d.L_VAL, d));
-        		arcSet.add(new Arc(i, constraint.L_VAL, constraint.getReverse()));
+    			if(d.arity() == 2) {
+    				BinaryDateConstraint constraint = (BinaryDateConstraint) d;
+
+    				
+    				arcSet.add(new Arc(d.L_VAL, i, d));
+    				System.out.println(d);
+    				arcSet.add( new Arc(i, constraint.L_VAL, constraint.getReverse()));
+    				System.out.println(constraint.getReverse());
+
+    			}
     		}
     	}
+    	System.out.println(arcSet);
     	
     	int i = 0;
     	
@@ -122,7 +128,7 @@ public class CSPSolver {
     			for(DateConstraint d : constraints) {
     				
     				if(d.arity() == 1) {
-    					arcSet.add(new Arc(i, d.L_VAL, d));
+    					arcSet.add(new Arc(d.L_VAL, i, d));
     				}
     			}
     		}
@@ -236,6 +242,7 @@ public class CSPSolver {
 					if(!d.isSatisfiedBy(ans.get(constraint.L_VAL), ans.get(constraint.R_VAL))) {
 						return false;
 					}
+					
 				}
 			}		
 	
@@ -245,32 +252,34 @@ public class CSPSolver {
     }
     
     private static boolean removeIncVal(MeetingDomain tail, MeetingDomain head, Set<DateConstraint> constraints) {
+    	
     	boolean removed = false;
-    	
-    	for(LocalDate date : tail.domainValues) {
-        	boolean consistent = false;
 
-    		for(LocalDate date2 : head.domainValues) {
-    			
-    			for(DateConstraint d : constraints) {
-    				
-    				if(d.isSatisfiedBy(date2, date)) {
-    					consistent = true;
-    					break;
-    				}
-    			}
-    		}
-    		
-        	if(!consistent) {
-        		//remove tail date from domain
-        		
-        		tail.domainValues.remove(date);
-        		
-        		removed = true;
-        	}
+    	Iterator<LocalDate> iterator = tail.domainValues.iterator();
+    	while(iterator.hasNext()) {
+    	    LocalDate date = iterator.next();
 
+    	    boolean consistent = false;
+
+    	    for(LocalDate date2 : head.domainValues) {
+
+    	        for(DateConstraint d : constraints) {
+
+    	            if(d.isSatisfiedBy(date, date2)) {
+    	                consistent = true;
+    	                break;
+    	            }
+    	        }
+    	    }
+
+    	    if(!consistent) {
+    	        //remove tail date from domain
+    	        iterator.remove();
+    	        removed = true;
+    	    }
     	}
-    	
+
     	return removed;
     }
+    
 }
